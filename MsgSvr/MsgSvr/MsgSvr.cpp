@@ -26,7 +26,7 @@ bool EvtSvr::Uninit()
 
 bool MsgSvr::Listen(string name)
 {
-    string strGlobal = "Global\\";
+    string strGlobal = "Local\\";
     _evtSvr.Create((strGlobal + name + string("_event")).c_str());
     _evtSvr.Wait();
 

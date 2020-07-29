@@ -32,7 +32,7 @@ bool EvtClient::Uninit()
 
 bool MsgClient::Connect(string name)
 {
-    string strGlobal = "Global\\";
+    string strGlobal = "Local\\";
     _evtClient.Connect((strGlobal + name + string("_event")).c_str());
 
     _hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL,

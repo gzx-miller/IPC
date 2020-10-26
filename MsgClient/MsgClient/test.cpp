@@ -1,4 +1,4 @@
-﻿#include "MsgClient.h"
+﻿#include "../../MsgOpt.h"
 #include <conio.h>
 
 using namespace std;
@@ -32,14 +32,16 @@ bool onRcvMsg(MsgStruct & msg) {
 
 int _tmain()
 {
-    MsgClient msgClient(sizeof(MsgStruct), onRcvMsg);
-    msgClient.Connect(string("share_mem"));
+    MsgMgr msgMgrClient(sizeof(MsgStruct), onRcvMsg);
+    if (!msgMgrClient.Create(string("share_mem"), false)) return -1;
+
     for (int i = 100; i < 200; ++i) {
         MsgStruct msg;
         msg.type = msg_svr;
         msg.val = i;
-        msgClient.PostMsg(msg);
-        msgClient.WaitMsg();
+        msgMgrClient.PostMsg(msg);
+        msgMgrClient.WaitMsg();
     }
+    msgMgrClient.Destroy();
     return 0;
 }

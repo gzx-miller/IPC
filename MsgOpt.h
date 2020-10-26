@@ -32,26 +32,43 @@ public:
     bool Uninit();
 };
 
-typedef bool(*PFRcvMsg)(MsgStruct & msg);
-class MsgSvr {
+typedef bool(*PFRcvMsg)(MsgStruct& msg);
+class MsgOpt {
 private:
     HANDLE _hMapFile;
     LPVOID _pBuf;
     int _bufSize;
     bool _exited;
 
-    EvtOpt _evtClient;                          // for signal
-    EvtOpt _evtSvr;                              // for wait 
+    EvtOpt _evtOpt;
 
     PFRcvMsg _onRcvMsg;
 public:
-    MsgSvr(int bufSize, PFRcvMsg onRcvMsg) :
+    MsgOpt(int bufSize) :_bufSize(bufSize) {};             // used by client
+    MsgOpt(int bufSize, PFRcvMsg onRcvMsg) :      // used by svr
         _bufSize(bufSize),
         _onRcvMsg(onRcvMsg),
         _exited(false) { }
-    ~MsgSvr() { Uninit(); }
-    bool Listen(string name);
-    bool Uninit();
+    ~MsgOpt() { Uninit(); }
+    bool Listen(string name);                                     // used by svr
     bool WaitMsg(int time = INFINITE);
-    bool PostMsg(MsgStruct &msg);
+    bool Connect(string name);                                 // used by client
+    bool PostMsg(MsgStruct& msg);
+    bool Uninit();
+};
+
+class MsgMgr {
+private:
+    MsgOpt _msgSvr;
+    MsgOpt _msgClient;
+
+public:
+    MsgMgr(int bufSize, PFRcvMsg onRcvMsg) :
+        _msgSvr(bufSize, onRcvMsg),
+        _msgClient(bufSize) {};
+    ~MsgMgr() { Destroy(); };
+    bool Create(string name, bool main);
+    bool WaitMsg(int time = INFINITE);
+    bool PostMsg(MsgStruct& msg);
+    bool Destroy();
 };

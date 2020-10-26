@@ -1,5 +1,5 @@
 ﻿#include <conio.h>
-#include "MsgSvr.h"
+#include "../../MsgOpt.h"
 // #pragma comment(lib, "user32.lib")
 
 using namespace std;
@@ -26,21 +26,22 @@ void sprintLog(const char *format, ...) {
     OutputDebugStringA(strBuf);
 }
 
-
 bool onRcvMsg(MsgStruct & msg) {
     sprintLog("MsgSvr onRcvMsg: %d, %d \r\n", msg.type, msg.val);
     return true;
 }
 
 int _tmain() {
-    MsgSvr msgSvr(sizeof(MsgStruct), onRcvMsg);
-    msgSvr.Listen(string("share_mem"));
+    MsgMgr msgMgrSvr(sizeof(MsgStruct), onRcvMsg);
+    if(!msgMgrSvr.Create(string("share_mem"), true)) return -1;
+
     for (int i = 0; i < 101; ++i) {
         MsgStruct msg;
         msg.type = msg_client;
         msg.val = i;
-        msgSvr.PostMsg(msg);
-        msgSvr.WaitMsg();
+        msgMgrSvr.PostMsg(msg);
+        msgMgrSvr.WaitMsg();
     }
+    msgMgrSvr.Destroy();
     return 0;
 }

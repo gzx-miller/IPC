@@ -34,8 +34,8 @@ bool onRcvMsg(MsgStruct & msg) {
 
 int _tmain() {
     MsgSvr msgSvr(sizeof(MsgStruct), onRcvMsg);
-    msgSvr.Listen(string("my_shared_memory"));
-    for (int i = 0; i < 100; ++i) {
+    msgSvr.Listen(string("share_mem"));
+    for (int i = 0; i < 101; ++i) {
         MsgStruct msg;
         msg.type = msg_client;
         msg.val = i;

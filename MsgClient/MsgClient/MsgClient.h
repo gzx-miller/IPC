@@ -6,17 +6,6 @@
 
 using namespace std;
 
-class EvtClient {
-private:
-    HANDLE _hEvent;
-public:
-    EvtClient() {}
-    ~EvtClient();
-    bool Connect(string name);
-    bool Wait(DWORD time = INFINITE);
-    bool Signal();
-    bool Uninit();
-};
 enum MsgType {
     msg_client = 1,
     msg_svr = 2,
@@ -27,20 +16,41 @@ struct MsgStruct {
     int val;
 };
 
+class EvtOpt {
+private:
+    HANDLE _hEvent;
+public:
+    EvtOpt() {}
+    ~EvtOpt() {
+        Uninit();
+    }
+    bool Create(string name);                               // for event svr
+    bool Connect(string name);                            // for event client
+    bool Wait(DWORD time = INFINITE);
+    bool Signal();
+    bool Uninit();
+};
+
 typedef bool(*PFRcvMsg)(MsgStruct & msg);
 class MsgClient {
 private:
     HANDLE _hMapFile;
     LPVOID _pBuf;
     int _bufSize;
-    EvtClient _evtClient;
+    bool _exited;
+
+    EvtOpt _evtClient;                          // for signal
+    EvtOpt _evtSvr;                              // for wait 
+
     PFRcvMsg _onRcvMsg;
 public:
-    MsgClient(int bufSize, PFRcvMsg onRcvMsg) : _bufSize(bufSize),
-        _onRcvMsg(onRcvMsg) { }
-    ~MsgClient() { Unint(); }
+    MsgClient(int bufSize, PFRcvMsg onRcvMsg) : 
+        _bufSize(bufSize),
+        _onRcvMsg(onRcvMsg), 
+        _exited(false) { }
+    ~MsgClient() { Uninit(); }
     bool Connect(string name);
-    bool Unint();
+    bool Uninit();
     bool WaitMsg(int time = INFINITE);
     bool PostMsg(MsgStruct &msg);
 };

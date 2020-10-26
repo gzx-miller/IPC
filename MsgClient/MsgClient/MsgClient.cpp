@@ -1,39 +1,56 @@
 #include "MsgClient.h"
 using namespace std;
 
-EvtClient::~EvtClient()
+bool EvtOpt::Create(string name)
 {
-    Uninit();
+    _hEvent = CreateEvent(NULL, FALSE, FALSE, name.c_str());
+    return _hEvent != NULL;
 }
 
-bool EvtClient::Connect(string name)
+bool EvtOpt::Connect(string name)
 {
     _hEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, name.c_str());
     return _hEvent != NULL;
 }
 
-bool EvtClient::Wait(DWORD time /*= INFINITE*/)
+bool EvtOpt::Wait(DWORD time /*= INFINITE*/)
 {
     if (_hEvent) WaitForSingleObject(_hEvent, time);
     return true;
 }
 
-bool EvtClient::Signal()
+bool EvtOpt::Signal()
 {
     if (_hEvent) SetEvent(_hEvent);
     return true;
 }
 
-bool EvtClient::Uninit()
+bool EvtOpt::Uninit()
 {
-    if (_hEvent) CloseHandle(_hEvent);
+    if (_hEvent) {
+        SetEvent(_hEvent);
+        CloseHandle(_hEvent);
+        _hEvent = NULL;
+    }
     return true;
 }
 
 bool MsgClient::Connect(string name)
 {
     string strGlobal = "Local\\";
-    _evtClient.Connect((strGlobal + name + string("_event")).c_str());
+    string strSvr = strGlobal + name + string("_svr");
+    string strClient = strGlobal + name + string("_client");
+
+    if (!_evtClient.Connect(strSvr.c_str())) {
+        _evtClient.Create(strSvr.c_str());
+    }
+    _evtClient.Connect(strSvr.c_str());
+
+    if (!_evtSvr.Connect(strClient.c_str())) {
+        _evtSvr.Create(strClient.c_str());
+    }
+    _evtSvr.Connect(strClient.c_str());
+    _evtClient.Signal();
 
     _hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL,
         PAGE_READWRITE, 0, _bufSize, (strGlobal + name).c_str());
@@ -42,9 +59,11 @@ bool MsgClient::Connect(string name)
     return _pBuf != NULL;
 }
 
-bool MsgClient::Unint()
+bool MsgClient::Uninit()
 {
+    _exited = true;
     _evtClient.Signal();
+    _evtSvr.Uninit();
     if (_pBuf) UnmapViewOfFile(_pBuf);
     if (_hMapFile) CloseHandle(_hMapFile);
     return true;
@@ -52,7 +71,8 @@ bool MsgClient::Unint()
 
 bool MsgClient::WaitMsg(int time /*= INFINITE*/)
 {
-    _evtClient.Wait(time);
+    if (_exited) return false;
+    _evtSvr.Wait(time);
     if (_onRcvMsg) _onRcvMsg(*((MsgStruct*)_pBuf));
     return true;
 }
